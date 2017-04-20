@@ -1,17 +1,23 @@
 package com.vnindie.glocoapp.geo_fence;
 
+import android.Manifest;
 import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.databinding.DataBindingUtil;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationListener;
@@ -28,8 +34,8 @@ public class GeofenceAct extends BaseActivity implements
   GeofenceContract.View,
   GoogleApiClient.OnConnectionFailedListener,
   GoogleApiClient.ConnectionCallbacks,
-  LocationListener {
-
+  LocationListener, ResultCallback<Status> {
+  private static final String TAG = "GeofenceAct";
   private GeofenceContract.Presenter mPresenter;
   private GeofenceActBinding mActBinding;
   private List<Geofence> mGeofenceList;
@@ -64,6 +70,13 @@ public class GeofenceAct extends BaseActivity implements
   }
 
   @Override
+  protected void onResume() {
+    super.onResume();
+
+
+  }
+
+  @Override
   protected void onStart() {
     super.onStart();
 
@@ -91,10 +104,10 @@ public class GeofenceAct extends BaseActivity implements
       .build();
   }
 
-  public GeofencingRequest createGeofenceRequest() {
+  public GeofencingRequest createGeofenceRequest(Geofence geofence) {
     GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
     builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER); // to trigger GEOFENCE_TRANSITION_ENTER when the device is already inside the geofence
-    builder.addGeofences(mGeofenceList);
+    builder.addGeofence(geofence);
     return builder.build();
   }
 
@@ -105,6 +118,22 @@ public class GeofenceAct extends BaseActivity implements
 
     Intent intent = new Intent(this, GeofenceTransitionsIntentService.class);
     return PendingIntent.getService(this, GEOFENCE_REQ_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+  }
+
+  private void addGeofence(GeofencingRequest request) {
+    Log.d(TAG, "addGeofence");
+//    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//      // TODO: Consider calling
+//      //    ActivityCompat#requestPermissions
+//      // here to request the missing permissions, and then overriding
+//      //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+//      //                                          int[] grantResults)
+//      // to handle the case where the user grants the permission. See the documentation
+//      // for ActivityCompat#requestPermissions for more details.
+//      Log.d(TAG, "addGeofence: dont have permission");
+//      return;
+//    }
+//    LocationServices.GeofencingApi.addGeofences(mGoogleApiClient, request, createGeofencePendingIntent()).setResultCallback(this);
   }
 
   @Override
@@ -132,16 +161,25 @@ public class GeofenceAct extends BaseActivity implements
 
   @Override
   public void onConnected(@Nullable Bundle bundle) {
+    Log.d(TAG, "onConnected: ");
 
+    Geofence geofence = createGeofence("My geofence", 21.040151, 105.811416, 500.0f);
+    GeofencingRequest request = createGeofenceRequest(geofence);
+    addGeofence(request);
   }
 
   @Override
   public void onConnectionSuspended(int i) {
-
+    Log.d(TAG, "onConnectionSuspended: ");
   }
 
   @Override
   public void onLocationChanged(Location location) {
+    Log.d(TAG, "onLocationChanged: ");
+  }
 
+  @Override
+  public void onResult(@NonNull Status status) {
+    Log.d(TAG, "onResult: ");
   }
 }

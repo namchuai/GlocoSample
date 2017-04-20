@@ -14,10 +14,10 @@ public class HomePresenter implements HomeContract.Presenter {
 
   @Override
   public void onFirstRequirementClicked() {
-    if (!mView.isConnectThroughWifi()) {
-      mView.displayMessage("Need using wifi!");
-      return;
-    }
+//    if (!mView.isConnectThroughWifi()) {
+//      mView.displayMessage("Need using wifi!");
+//      return;
+//    }
     mView.navigateToGeofenceAct();
   }
 
