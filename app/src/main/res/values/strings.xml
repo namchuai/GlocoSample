@@ -1,3 +1,4 @@
 <resources>
   <string name="app_name">Gloco app</string>
+  <string name="geolocation_api_key">AIzaSyAbX4n4xK-FucydY-vj6bv0GUQdbA0xAmQ</string>
 </resources>

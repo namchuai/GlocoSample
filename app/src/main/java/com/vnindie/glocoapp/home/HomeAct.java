@@ -7,8 +7,8 @@ import com.vnindie.glocoapp.R;
 import com.vnindie.glocoapp.base.BaseActivity;
 import com.vnindie.glocoapp.base.BaseView;
 
-public class HomeAct extends BaseActivity implements BaseView<HomePresenter> {
-  private HomePresenter mPresenter;
+public class HomeAct extends BaseActivity implements HomeContract.View {
+  private HomeContract.Presenter mPresenter;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -17,7 +17,7 @@ public class HomeAct extends BaseActivity implements BaseView<HomePresenter> {
   }
 
   @Override
-  public void setPresenter(HomePresenter presenter) {
-    this.mPresenter = presenter;
+  public void setPresenter(HomeContract.Presenter presenter) {
+    mPresenter = presenter;
   }
 }

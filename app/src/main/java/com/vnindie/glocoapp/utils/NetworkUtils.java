@@ -1,10 +1,8 @@
 package com.vnindie.glocoapp.utils;
 
-/**
- * Created by namchuai on 4/19/17.
- */
+public final class NetworkUtils {
 
-public class NetworkUtils {
+  // TODO check connection type here
 
 
 
