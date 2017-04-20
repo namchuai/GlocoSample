@@ -25,18 +25,24 @@ class DoctorPresenter implements DoctorContract.Presenter {
 
   @Override
   public void loadDoctorsRemotely() {
+    mView.setLoadingIndicator(true);
+    mLocalDocRepo.clearAllDoctors();
+
     mRemoteDocRepo.getDoctors(new DoctorDataSource.OnGetDoctorsCallback() {
       @Override
       public void onSuccess(List<Doctor> doctors) {
-        if (doctors !=null && !doctors.isEmpty()) {
+        mView.setLoadingIndicator(false);
+        if (doctors != null && !doctors.isEmpty()) {
+          mLocalDocRepo.saveDoctors(doctors);
           mView.updateData(doctors);
         } else {
-          mView.displayMessage("Data not available on remote server!");
+          mView.displayMessage("Data not available!");
         }
       }
 
       @Override
       public void onFailed(String message) {
+        mView.setLoadingIndicator(false);
         mView.displayMessage(message);
       }
     });
@@ -47,11 +53,7 @@ class DoctorPresenter implements DoctorContract.Presenter {
     mLocalDocRepo.getDoctors(new DoctorDataSource.OnGetDoctorsCallback() {
       @Override
       public void onSuccess(List<Doctor> doctors) {
-        if (doctors != null && !doctors.isEmpty()) {
-          mView.updateData(doctors);
-        } else {
-          mView.displayMessage("Data not available locally! Try to refresh!");
-        }
+        mView.updateData(doctors);
       }
 
       @Override

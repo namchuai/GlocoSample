@@ -14,6 +14,8 @@ interface HomeContract {
     boolean isConnectThroughCellularData();
 
     boolean isConnectThroughWifi();
+
+    void navigateToGeofenceAct();
   }
 
   interface Presenter extends BasePresenter {

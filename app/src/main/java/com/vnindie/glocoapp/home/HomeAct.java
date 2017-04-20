@@ -12,6 +12,7 @@ import com.vnindie.glocoapp.R;
 import com.vnindie.glocoapp.base.BaseActivity;
 import com.vnindie.glocoapp.databinding.HomeActBinding;
 import com.vnindie.glocoapp.doctor_list.DoctorAct;
+import com.vnindie.glocoapp.geo_fence.GeofenceAct;
 import com.vnindie.glocoapp.utils.ConnectivityUtils;
 
 public class HomeAct extends BaseActivity implements HomeContract.View {
@@ -28,7 +29,7 @@ public class HomeAct extends BaseActivity implements HomeContract.View {
 
   @Override
   protected void initBindingData() {
-    mActBinding = DataBindingUtil.setContentView(this, R.layout.doctor_act);
+    mActBinding = DataBindingUtil.setContentView(this, R.layout.home_act);
   }
 
   @Override
@@ -38,6 +39,13 @@ public class HomeAct extends BaseActivity implements HomeContract.View {
 
   @Override
   public void initView() {
+    mActBinding.firstRequirementBtn.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        mPresenter.onFirstRequirementClicked();
+      }
+    });
+
     mActBinding.secondRequirementBtn.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
@@ -72,5 +80,10 @@ public class HomeAct extends BaseActivity implements HomeContract.View {
   @Override
   public void navigateToDoctorAct() {
     startActivity(new Intent(this, DoctorAct.class));
+  }
+
+  @Override
+  public void navigateToGeofenceAct() {
+    startActivity(new Intent(this, GeofenceAct.class));
   }
 }

@@ -1,8 +1,10 @@
 package com.vnindie.glocoapp.doctor_list;
 
+import android.content.DialogInterface;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 
@@ -36,11 +38,35 @@ public class DoctorAct extends BaseActivity implements DoctorContract.View {
     mActBinding.doctorListView.setAdapter(mAdapter);
     mActBinding.doctorListView.setLayoutManager(new LinearLayoutManager(this));
     mActBinding.doctorListView.setHasFixedSize(true);
+
+    mActBinding.refreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+      @Override
+      public void onRefresh() {
+        mPresenter.loadDoctorsRemotely();
+      }
+    });
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    mPresenter.loadDoctorsLocally();
+  }
+
+  @Override
+  public void setLoadingIndicator(boolean active) {
+    mActBinding.refreshLayout.setRefreshing(active);
   }
 
   @Override
   public void displayMessage(String message) {
     new AlertDialog.Builder(this)
+      .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+        @Override
+        public void onClick(DialogInterface dialog, int which) {
+          dialog.dismiss();
+        }
+      })
       .setMessage(message)
       .show();
   }

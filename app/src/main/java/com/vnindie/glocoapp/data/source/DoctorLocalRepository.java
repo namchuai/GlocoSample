@@ -29,10 +29,10 @@ public class DoctorLocalRepository implements DoctorDataSource {
   @Override
   public void getDoctors(OnGetDoctorsCallback callback) {
     List<Doctor> doctors = mRealm.where(Doctor.class).findAll();
-    if (doctors != null && doctors.size() > 0) {
+    if (doctors != null && !doctors.isEmpty()) {
       callback.onSuccess(doctors);
     } else {
-      callback.onFailed("No doctors available");
+      callback.onFailed("No doctors available locally! Pull to refresh!");
     }
   }
 
@@ -44,6 +44,16 @@ public class DoctorLocalRepository implements DoctorDataSource {
         for (Doctor doc : doctors) {
           mRealm.copyToRealm(doc);
         }
+      }
+    });
+  }
+
+  @Override
+  public void clearAllDoctors() {
+    mRealm.executeTransaction(new Realm.Transaction() {
+      @Override
+      public void execute(Realm realm) {
+        mRealm.where(Doctor.class).findAll().deleteAllFromRealm();
       }
     });
   }

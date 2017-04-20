@@ -51,4 +51,9 @@ public class DoctorRemoteRepository implements DoctorDataSource {
   public void saveDoctors(List<Doctor> doctors) {
     throw new UnsupportedOperationException("Can't save doctor at remote repo");
   }
+
+  @Override
+  public void clearAllDoctors() {
+    throw new UnsupportedOperationException("Can't clear doctor at remote repo");
+  }
 }

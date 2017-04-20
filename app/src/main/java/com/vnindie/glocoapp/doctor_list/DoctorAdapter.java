@@ -1,6 +1,7 @@
 package com.vnindie.glocoapp.doctor_list;
 
 import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -19,7 +20,8 @@ class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorViewHolder>
 
   @Override
   public DoctorViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
-    return null;
+    LayoutInflater inflater = LayoutInflater.from(viewGroup.getContext());
+    return new DoctorViewHolder(inflater.inflate(R.layout.doctor_item, viewGroup, false));
   }
 
   @Override
@@ -41,7 +43,7 @@ class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorViewHolder>
   static class DoctorViewHolder extends RecyclerView.ViewHolder {
     private TextView mDoctorName;
 
-    public DoctorViewHolder(View itemView) {
+    DoctorViewHolder(View itemView) {
       super(itemView);
       mDoctorName = (TextView) itemView.findViewById(R.id.doctorName);
     }

@@ -4,12 +4,15 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
-public class ConnectivityUtils {
+public final class ConnectivityUtils {
+
+  private ConnectivityUtils() {
+  }
 
   /**
    * Get the network info
-   * @param context
-   * @return
+   * @param context context to access android's function
+   * @return NetworkInfo object which contains connection information
    */
   public static NetworkInfo getNetworkInfo(Context context){
     ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -18,8 +21,8 @@ public class ConnectivityUtils {
 
   /**
    * Check if there is any connectivity to a Wifi network
-   * @param context
-   * @return
+   * @param context context to access android's function
+   * @return boolean if the phone is connected through wifi
    */
   public static boolean isConnectedWifi(Context context){
     NetworkInfo info = ConnectivityUtils.getNetworkInfo(context);
@@ -28,8 +31,8 @@ public class ConnectivityUtils {
 
   /**
    * Check if there is any connectivity to a mobile network
-   * @param context
-   * @return
+   * @param context context to access android's function
+   * @return boolean if the phone is connected through cellular data
    */
   public static boolean isConnectedMobile(Context context){
     NetworkInfo info = ConnectivityUtils.getNetworkInfo(context);

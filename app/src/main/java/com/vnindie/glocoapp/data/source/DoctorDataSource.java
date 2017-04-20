@@ -9,6 +9,8 @@ public interface DoctorDataSource {
 
   void saveDoctors(List<Doctor> doctors);
 
+  void clearAllDoctors();
+
   interface OnGetDoctorsCallback {
     void onSuccess(List<Doctor> doctors);
 

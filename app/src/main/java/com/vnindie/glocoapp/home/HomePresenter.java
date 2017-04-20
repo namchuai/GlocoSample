@@ -18,8 +18,7 @@ public class HomePresenter implements HomeContract.Presenter {
       mView.displayMessage("Need using wifi!");
       return;
     }
-
-    // TODO
+    mView.navigateToGeofenceAct();
   }
 
   @Override

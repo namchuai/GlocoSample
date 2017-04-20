@@ -10,6 +10,8 @@ interface DoctorContract {
   interface View extends BaseView<Presenter> {
     void initView();
 
+    void setLoadingIndicator(boolean active);
+
     void displayMessage(String message);
 
     void updateData(List<Doctor> doctors);
