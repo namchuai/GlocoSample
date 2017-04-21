@@ -1,8 +1,8 @@
 <component name="libraryTable">
   <library name="relinker-1.2.2">
     <CLASSES>
-      <root url="jar://$USER_HOME$/.android/build-cache/745a7d9199c3e52d8f78eeedb6176a89fd48d0d2/output/jars/classes.jar!/" />
-      <root url="file://$USER_HOME$/.android/build-cache/745a7d9199c3e52d8f78eeedb6176a89fd48d0d2/output/res" />
+      <root url="file://$USER_HOME$/.android/build-cache/1eb4bec42d01783e3ed3408a8dce5f1440ea4172/output/res" />
+      <root url="jar://$USER_HOME$/.android/build-cache/1eb4bec42d01783e3ed3408a8dce5f1440ea4172/output/jars/classes.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
