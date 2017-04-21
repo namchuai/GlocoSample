@@ -1,9 +1,9 @@
 package com.vnindie.glocoapp.home;
 
-public class HomePresenter implements HomeContract.Presenter {
+class HomePresenter implements HomeContract.Presenter {
   private final HomeContract.View mView;
 
-  public HomePresenter(HomeContract.View mView) {
+  HomePresenter(HomeContract.View mView) {
     this.mView = mView;
   }
 
@@ -14,10 +14,11 @@ public class HomePresenter implements HomeContract.Presenter {
 
   @Override
   public void onFirstRequirementClicked() {
-//    if (!mView.isConnectThroughWifi()) {
-//      mView.displayMessage("Need using wifi!");
-//      return;
-//    }
+    if (!mView.isConnectThroughWifi()) {
+      mView.displayMessage("Need using wifi!");
+      return;
+    }
+
     mView.navigateToGeofenceAct();
   }
 
