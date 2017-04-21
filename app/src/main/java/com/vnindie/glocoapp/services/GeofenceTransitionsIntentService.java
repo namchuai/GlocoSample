@@ -20,8 +20,13 @@ public class GeofenceTransitionsIntentService extends IntentService {
     super(name);
   }
 
+  public GeofenceTransitionsIntentService() {
+    super("GeofenceTransitionsIntentService");
+  }
+
   @Override
   protected void onHandleIntent(@Nullable Intent intent) {
+    Log.d(TAG, "onHandleIntent: ");
     GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
 
     if (geofencingEvent.hasError()) {
@@ -32,7 +37,8 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
     int geofenceTransition = geofencingEvent.getGeofenceTransition();
 
-    if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
+    if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER
+      || geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
       sendNotification();
     }
   }
@@ -51,6 +57,8 @@ public class GeofenceTransitionsIntentService extends IntentService {
   }
 
   private void sendNotification() {
+    Log.d(TAG, "sendNotification: ");
+
     NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
       .setSmallIcon(R.mipmap.ic_launcher)
       .setContentTitle(getString(R.string.app_name))
