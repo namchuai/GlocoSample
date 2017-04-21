@@ -10,7 +10,6 @@ class GeofencePresenter implements GeofenceContract.Presenter {
   @Override
   public void start() {
     mView.initView();
-    mView.initData();
     mView.initConnectionToGoogleApi();
   }
 

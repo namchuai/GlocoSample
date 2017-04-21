@@ -26,39 +26,20 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
   @Override
   protected void onHandleIntent(@Nullable Intent intent) {
-    Log.d(TAG, "onHandleIntent: ");
     GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
 
     if (geofencingEvent.hasError()) {
-      String errorMsg = getErrorString(geofencingEvent.getErrorCode());
-      Log.e(TAG, errorMsg);
       return;
     }
 
     int geofenceTransition = geofencingEvent.getGeofenceTransition();
 
-    if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER
-      || geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+    if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
       sendNotification();
     }
   }
 
-  private static String getErrorString(int errorCode) {
-    switch (errorCode) {
-      case GeofenceStatusCodes.GEOFENCE_NOT_AVAILABLE:
-        return "GeoFence not available";
-      case GeofenceStatusCodes.GEOFENCE_TOO_MANY_GEOFENCES:
-        return "Too many GeoFences";
-      case GeofenceStatusCodes.GEOFENCE_TOO_MANY_PENDING_INTENTS:
-        return "Too many pending intents";
-      default:
-        return "Unknown error.";
-    }
-  }
-
   private void sendNotification() {
-    Log.d(TAG, "sendNotification: ");
-
     NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
       .setSmallIcon(R.mipmap.ic_launcher)
       .setContentTitle(getString(R.string.app_name))

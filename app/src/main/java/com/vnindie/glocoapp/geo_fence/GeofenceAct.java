@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.databinding.DataBindingUtil;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -14,6 +15,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
+import android.view.View;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -24,25 +26,48 @@ import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.vnindie.glocoapp.R;
 import com.vnindie.glocoapp.base.BaseActivity;
 import com.vnindie.glocoapp.databinding.GeofenceActBinding;
 import com.vnindie.glocoapp.services.GeofenceTransitionsIntentService;
 
 public class GeofenceAct extends BaseActivity implements
+  OnMapReadyCallback,
   LocationListener,
   GeofenceContract.View,
   ResultCallback<Status>,
   GoogleApiClient.ConnectionCallbacks,
-  GoogleApiClient.OnConnectionFailedListener {
+  GoogleApiClient.OnConnectionFailedListener,
+  GoogleMap.OnMarkerClickListener,
+  GoogleMap.OnMapClickListener {
 
   private static final String TAG = "GeofenceAct";
   private GeofenceContract.Presenter mPresenter;
   private GeofenceActBinding mActBinding;
 
   private GoogleApiClient mGoogleApiClient;
+  private Location mLastLocation;
+  private final int REQ_PERMISSION = 100;
+  private LocationRequest mLocationRequest;
+  private final int UPDATE_INTERVAL = 1000;
+  private final int FASTEST_INTERVAL = 900;
   private PendingIntent mGeofencePendingIntent;
-  private static final int GEOFENCE_REQ_CODE = 0;
+  private final int GEOFENCE_REQ_CODE = 0;
+  private Circle mGeoFenceLimits;
+
+  private MapFragment mMapFragment;
+  private GoogleMap mMap;
 
   @Override
   protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -54,19 +79,27 @@ public class GeofenceAct extends BaseActivity implements
 
   @Override
   public void initView() {
-  }
+    mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
+    mMapFragment.getMapAsync(this);
 
-  @Override
-  public void initData() {
+    mActBinding.start.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        startGeofence();
+      }
+    });
   }
 
   @Override
   public void initConnectionToGoogleApi() {
-    mGoogleApiClient = new GoogleApiClient.Builder(this)
-      .addConnectionCallbacks(this)
-      .addOnConnectionFailedListener(this)
-      .addApi(LocationServices.API)
-      .build();
+    Log.d(TAG, "initConnectionToGoogleApi: ");
+    if (mGoogleApiClient == null) {
+      mGoogleApiClient = new GoogleApiClient.Builder(this)
+        .addConnectionCallbacks(this)
+        .addOnConnectionFailedListener(this)
+        .addApi(LocationServices.API)
+        .build();
+    }
   }
 
   @Override
@@ -86,46 +119,33 @@ public class GeofenceAct extends BaseActivity implements
     mActBinding = DataBindingUtil.setContentView(this, R.layout.geofence_act);
   }
 
-  public Geofence createGeofence(String geoFenceId, double lat, double lon, float radius) {
-    return new Geofence.Builder()
-      .setRequestId(geoFenceId)
-      .setCircularRegion(lat, lon, 1000)
-      .setExpirationDuration(5 * 60 * 1000) // five mins
-      .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
+  private GeofencingRequest createGeofenceRequest(Geofence geofence) {
+    Log.d(TAG, "createGeofenceRequest");
+    return new GeofencingRequest.Builder()
+      .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+      .addGeofence(geofence)
       .build();
   }
 
-  public GeofencingRequest createGeofenceRequest(Geofence geofence) {
-    GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
-    builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER); // to trigger GEOFENCE_TRANSITION_ENTER when the device is already inside the geofence
-    builder.addGeofence(geofence);
-    return builder.build();
-  }
-
-  public PendingIntent createGeofencePendingIntent() {
-    Log.d(TAG, "createGeofencePendingIntent: ");
-    if (mGeofencePendingIntent != null) {
+  private PendingIntent createGeofencePendingIntent() {
+    Log.d(TAG, "createGeofencePendingIntent");
+    if (mGeofencePendingIntent != null)
       return mGeofencePendingIntent;
-    }
 
     Intent intent = new Intent(this, GeofenceTransitionsIntentService.class);
-    return PendingIntent.getService(this, GEOFENCE_REQ_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+    return PendingIntent.getService(
+      this, GEOFENCE_REQ_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
   }
 
+  // Add the created GeofenceRequest to the device's monitoring list
   private void addGeofence(GeofencingRequest request) {
     Log.d(TAG, "addGeofence");
-    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-      // TODO: Consider calling
-      //    ActivityCompat#requestPermissions
-      // here to request the missing permissions, and then overriding
-      //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-      //                                          int[] grantResults)
-      // to handle the case where the user grants the permission. See the documentation
-      // for ActivityCompat#requestPermissions for more details.
-      Log.d(TAG, "addGeofence: dont have permission");
-      return;
-    }
-    LocationServices.GeofencingApi.addGeofences(mGoogleApiClient, request, createGeofencePendingIntent()).setResultCallback(this);
+    if (checkPermission())
+      LocationServices.GeofencingApi.addGeofences(
+        mGoogleApiClient,
+        request,
+        createGeofencePendingIntent()
+      ).setResultCallback(this);
   }
 
   @Override
@@ -135,7 +155,7 @@ public class GeofenceAct extends BaseActivity implements
 
   @Override
   public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-    mPresenter.onConnectionFailed(connectionResult.getErrorMessage());
+    Log.d(TAG, "onConnectionFailed: ");
   }
 
   @Override
@@ -155,21 +175,17 @@ public class GeofenceAct extends BaseActivity implements
   public void onConnected(@Nullable Bundle bundle) {
     Log.d(TAG, "onConnected: ");
 
-    Geofence geofence = createGeofence("My geofence", 21.040151, 105.811416, 500.0f);
-    GeofencingRequest request = createGeofenceRequest(geofence);
-    addGeofence(request);
-
     getLastKnownLocation();
   }
 
-  private Location lastLocation;
-
-  public void getLastKnownLocation() {
+  private void getLastKnownLocation() {
     Log.d(TAG, "getLastKnownLocation()");
     if (checkPermission()) {
-      lastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-      if (lastLocation != null) {
-        Log.i(TAG, "LasKnown location. " + "Long: " + lastLocation.getLongitude() + " | Lat: " + lastLocation.getLatitude());
+      mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+      if (mLastLocation != null) {
+        Log.i(TAG, "LasKnown location. " +
+          "Long: " + mLastLocation.getLongitude() +
+          " | Lat: " + mLastLocation.getLatitude());
         writeLastLocation();
         startLocationUpdates();
       } else {
@@ -179,33 +195,17 @@ public class GeofenceAct extends BaseActivity implements
     } else askPermission();
   }
 
-  private LocationRequest locationRequest;
-  // Defined in mili seconds.
-  // This number in extremely low, and should be used only for debug
-  private final int UPDATE_INTERVAL = 1000;
-  private final int FASTEST_INTERVAL = 900;
 
   // Start location Updates
   private void startLocationUpdates() {
     Log.i(TAG, "startLocationUpdates()");
-    locationRequest = LocationRequest.create()
+    mLocationRequest = LocationRequest.create()
       .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
       .setInterval(UPDATE_INTERVAL)
       .setFastestInterval(FASTEST_INTERVAL);
 
-//    if ( checkPermission() )
-    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-      && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-      // TODO: Consider calling
-      //    ActivityCompat#requestPermissions
-      // here to request the missing permissions, and then overriding
-      //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-      //                                          int[] grantResults)
-      // to handle the case where the user grants the permission. See the documentation
-      // for ActivityCompat#requestPermissions for more details.
-      return;
-    }
-    LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, locationRequest, this);
+    if (checkPermission())
+      LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
   }
 
   @Override
@@ -215,16 +215,82 @@ public class GeofenceAct extends BaseActivity implements
 
   @Override
   public void onLocationChanged(Location location) {
-    Log.d(TAG, "onLocationChanged ["+location+"]");
-    lastLocation = location;
+    Log.d(TAG, "onLocationChanged [" + location + "]");
+    mLastLocation = location;
     writeActualLocation(location);
   }
 
+  private static final long GEO_DURATION = 60 * 60 * 1000;
+  private static final String GEOFENCE_REQ_ID = "My Geofence";
+  private static final float GEOFENCE_RADIUS = 500.0f; // in meters
+
+  private Geofence createGeofence(LatLng latLng, float radius) {
+    Log.d(TAG, "createGeofence");
+    return new Geofence.Builder()
+      .setRequestId(GEOFENCE_REQ_ID)
+      .setCircularRegion(latLng.latitude, latLng.longitude, radius)
+      .setExpirationDuration(GEO_DURATION)
+      .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER
+        | Geofence.GEOFENCE_TRANSITION_EXIT)
+      .build();
+  }
+
+  private void writeActualLocation(Location location) {
+    markerLocation(new LatLng(location.getLatitude(), location.getLongitude()));
+
+    Log.d(TAG, "lat, long: " + location.getLatitude() + ", " + location.getLongitude());
+  }
+
+  private void writeLastLocation() {
+    writeActualLocation(mLastLocation);
+  }
+
+  private Marker locationMarker;
+
+  // Create a Location Marker
+  private void markerLocation(LatLng latLng) {
+    Log.i(TAG, "markerLocation(" + latLng + ")");
+    String title = latLng.latitude + ", " + latLng.longitude;
+    MarkerOptions markerOptions = new MarkerOptions()
+      .position(latLng)
+      .title(title);
+    if (mMap != null) {
+      // Remove the anterior marker
+      if (locationMarker != null)
+        locationMarker.remove();
+      locationMarker = mMap.addMarker(markerOptions);
+      float zoom = 14f;
+      CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, zoom);
+      mMap.animateCamera(cameraUpdate);
+    }
+  }
+
+  private Marker geoFenceMarker;
+
+  // Create a marker for the geofence creation
+  private void markerForGeofence(LatLng latLng) {
+    Log.i(TAG, "markerForGeofence(" + latLng + ")");
+    String title = latLng.latitude + ", " + latLng.longitude;
+    // Define marker options
+    MarkerOptions markerOptions = new MarkerOptions()
+      .position(latLng)
+      .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
+      .title(title);
+    if (mMap != null) {
+      // Remove last geoFenceMarker
+      if (geoFenceMarker != null)
+        geoFenceMarker.remove();
+
+      geoFenceMarker = mMap.addMarker(markerOptions);
+    }
+  }
+
+  // Check for permission to access Location
   private boolean checkPermission() {
     Log.d(TAG, "checkPermission()");
     // Ask for permission if it wasn't granted yet
     return (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-      == PackageManager.PERMISSION_GRANTED );
+      == PackageManager.PERMISSION_GRANTED);
   }
 
   // Asks for permission
@@ -232,31 +298,20 @@ public class GeofenceAct extends BaseActivity implements
     Log.d(TAG, "askPermission()");
     ActivityCompat.requestPermissions(
       this,
-      new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
+      new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
       REQ_PERMISSION
     );
   }
 
-  private final int REQ_PERMISSION = 100;
-
-  // Write location coordinates on UI
-  private void writeActualLocation(Location location) {
-//    textLat.setText( "Lat: " + location.getLatitude() );
-//    textLong.setText( "Long: " + location.getLongitude() );
-  }
-
-  private void writeLastLocation() {
-    writeActualLocation(lastLocation);
-  }
-
+  // Verify user's response of the permission requested
   @Override
   public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
     Log.d(TAG, "onRequestPermissionsResult()");
     super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    switch ( requestCode ) {
+    switch (requestCode) {
       case REQ_PERMISSION: {
-        if ( grantResults.length > 0
-          && grantResults[0] == PackageManager.PERMISSION_GRANTED ){
+        if (grantResults.length > 0
+          && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
           // Permission granted
           getLastKnownLocation();
 
@@ -276,6 +331,56 @@ public class GeofenceAct extends BaseActivity implements
 
   @Override
   public void onResult(@NonNull Status status) {
-    Log.d(TAG, "onResult: " + status.isSuccess());
+//    displayMessage("Geofence created successfully");
+    Log.i(TAG, "onResult: " + status);
+    if (status.isSuccess()) {
+      drawGeofence();
+    } else {
+      // inform about fail
+    }
+  }
+
+  // Start Geofence creation process
+  private void startGeofence() {
+    Log.i(TAG, "startGeofence()");
+    if (geoFenceMarker != null) {
+      Geofence geofence = createGeofence(geoFenceMarker.getPosition(), GEOFENCE_RADIUS);
+      GeofencingRequest geofenceRequest = createGeofenceRequest(geofence);
+      addGeofence(geofenceRequest);
+    } else {
+      Log.e(TAG, "Geofence marker is null");
+    }
+  }
+
+  private void drawGeofence() {
+    Log.d(TAG, "drawGeofence()");
+
+    if (mGeoFenceLimits != null)
+      mGeoFenceLimits.remove();
+
+    CircleOptions circleOptions = new CircleOptions()
+      .center(geoFenceMarker.getPosition())
+      .strokeColor(Color.argb(50, 70, 70, 70))
+      .fillColor(Color.argb(100, 150, 150, 150))
+      .radius(GEOFENCE_RADIUS);
+    mGeoFenceLimits = mMap.addCircle(circleOptions);
+  }
+
+  @Override
+  public void onMapReady(GoogleMap googleMap) {
+    mMap = googleMap;
+    mMap.setOnMapClickListener(this);
+    mMap.setOnMarkerClickListener(this);
+  }
+
+  @Override
+  public boolean onMarkerClick(Marker marker) {
+    return false;
+  }
+
+  @Override
+  public void onMapClick(LatLng latLng) {
+    Log.d(TAG, "onMapClick(" + latLng + ")");
+    markerForGeofence(latLng);
   }
 }

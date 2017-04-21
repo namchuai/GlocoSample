@@ -12,8 +12,6 @@ public interface GeofenceContract {
   interface View extends BaseView<Presenter> {
     void initView();
 
-    void initData();
-
     void initConnectionToGoogleApi();
 
     void displayMessage(String message);
